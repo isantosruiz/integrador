@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Calculadora de integrales</title>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --text: #152033;
+        --muted: #4d607f;
+        --accent: #2056d4;
+        --accent-soft: #dbe7ff;
+        --border: #d7e0f0;
+        --error: #a81e2f;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(150deg, #eef3ff 0%, var(--bg) 45%, #edf8ff 100%);
+        color: var(--text);
+      }
+
+      .wrap {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 2rem 1rem 3rem;
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 1.25rem;
+        box-shadow: 0 10px 28px rgba(20, 46, 98, 0.08);
+      }
+
+      h1 {
+        margin-top: 0;
+        margin-bottom: 0.75rem;
+        font-size: 1.65rem;
+      }
+
+      p {
+        margin-top: 0;
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        gap: 1rem;
+      }
+
+      @media (min-width: 800px) {
+        .grid-2 {
+          grid-template-columns: 1fr 220px;
+        }
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 0.35rem;
+      }
+
+      textarea,
+      input {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.7rem 0.8rem;
+        font-size: 1rem;
+        color: var(--text);
+        background: #fff;
+      }
+
+      textarea {
+        min-height: 86px;
+        resize: vertical;
+      }
+
+      .mode-box {
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 0.7rem 0.8rem;
+        background: #fbfdff;
+      }
+
+      .mode-box label {
+        margin: 0.2rem 0;
+        font-weight: 500;
+      }
+
+      .mode-box input[type="radio"] {
+        width: auto;
+        margin-right: 0.3rem;
+      }
+
+      .bounds {
+        display: grid;
+        gap: 0.8rem;
+        grid-template-columns: 1fr;
+      }
+
+      @media (min-width: 550px) {
+        .bounds {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+
+      .actions {
+        margin-top: 1rem;
+      }
+
+      button {
+        border: 0;
+        border-radius: 10px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 1rem;
+        font-weight: 600;
+        padding: 0.75rem 1rem;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #1848b8;
+      }
+
+      .result {
+        margin-top: 1.2rem;
+        background: var(--accent-soft);
+        border: 1px solid #bfd4ff;
+        border-radius: 10px;
+        padding: 1rem;
+      }
+
+      .result h2 {
+        margin-top: 0;
+        margin-bottom: 0.5rem;
+        font-size: 1.05rem;
+      }
+
+      .math-block {
+        font-size: 1.15rem;
+        padding: 0.4rem 0;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .error {
+        color: var(--error);
+        font-weight: 600;
+      }
+
+      .hint {
+        margin-top: 0.8rem;
+        font-size: 0.9rem;
+      }
+    </style>
+    <script>
+      window.MathJax = {
+        tex: { inlineMath: [["$", "$"], ["\\(", "\\)"]] },
+      };
+    </script>
+    <script
+      id="MathJax-script"
+      async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    ></script>
+  </head>
+  <body>
+    <main class="wrap">
+      <section class="card">
+        <h1>Integración simbólica</h1>
+        <p>
+          Ingresa una función matemática y elige si quieres integral indefinida o definida.
+        </p>
+
+        <form id="integral-form" class="grid">
+          <div class="grid grid-2">
+            <div>
+              <label for="function">Función</label>
+              <textarea id="function" name="function" placeholder="Ejemplo: sin(x)^2 + x*exp(x)" required></textarea>
+            </div>
+            <div>
+              <label for="variable">Variable de integración</label>
+              <input id="variable" name="variable" value="x" />
+
+              <div class="mode-box" style="margin-top: 0.8rem">
+                <label>
+                  <input type="radio" name="mode" value="indefinite" checked />
+                  Integral indefinida
+                </label>
+                <label>
+                  <input type="radio" name="mode" value="defined" />
+                  Integral definida
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div id="bounds" class="bounds" hidden>
+            <div>
+              <label for="lower">Límite inferior</label>
+              <input id="lower" name="lower" placeholder="Ejemplo: 0" />
+            </div>
+            <div>
+              <label for="upper">Límite superior</label>
+              <input id="upper" name="upper" placeholder="Ejemplo: pi" />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="submit">Calcular integral</button>
+          </div>
+        </form>
+
+        <div id="output" class="result" hidden>
+          <h2>Resultado</h2>
+          <div class="muted">Integral solicitada:</div>
+          <div id="integral-latex" class="math-block"></div>
+          <div class="muted">Resultado:</div>
+          <div id="result-latex" class="math-block"></div>
+          <div id="result-text" class="hint muted"></div>
+          <div id="error" class="error"></div>
+        </div>
+      </section>
+    </main>
+
+    <script>
+      const form = document.getElementById("integral-form");
+      const bounds = document.getElementById("bounds");
+      const output = document.getElementById("output");
+      const integralLatex = document.getElementById("integral-latex");
+      const resultLatex = document.getElementById("result-latex");
+      const resultText = document.getElementById("result-text");
+      const errorText = document.getElementById("error");
+
+      function refreshMode() {
+        const mode = document.querySelector('input[name="mode"]:checked').value;
+        bounds.hidden = mode !== "defined";
+      }
+
+      document.querySelectorAll('input[name="mode"]').forEach((radio) => {
+        radio.addEventListener("change", refreshMode);
+      });
+      refreshMode();
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        output.hidden = false;
+        errorText.textContent = "";
+        integralLatex.textContent = "";
+        resultLatex.textContent = "";
+        resultText.textContent = "Calculando...";
+
+        const formData = new FormData(form);
+        const payload = {
+          function: formData.get("function"),
+          variable: formData.get("variable") || "x",
+          mode: formData.get("mode"),
+          lower: formData.get("lower") || "",
+          upper: formData.get("upper") || "",
+        };
+
+        try {
+          const response = await fetch("/integrate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+
+          const data = await response.json();
+          if (!response.ok || !data.ok) {
+            throw new Error(data.error || "Error inesperado");
+          }
+
+          integralLatex.textContent = `\\[${data.integral_latex}\\]`;
+          resultLatex.textContent = `\\[${data.result_latex}\\]`;
+          resultText.textContent = `Forma texto: ${data.result_text}`;
+
+          if (window.MathJax && window.MathJax.typesetPromise) {
+            await window.MathJax.typesetPromise([integralLatex, resultLatex]);
+          }
+        } catch (error) {
+          resultText.textContent = "";
+          errorText.textContent = String(error.message || error);
+        }
+      });
+    </script>
+  </body>
+  </html>
