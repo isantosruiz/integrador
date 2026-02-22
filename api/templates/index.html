@@ -4,6 +4,15 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Calculadora de integrales</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+  
+    <!-- The loading of KaTeX is deferred to speed up page rendering -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+  
+    <!-- To automatically render math in text elements, include the auto-render extension: -->
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js"
+      onload="renderMathInElement(document.body);"></script>
+
     <style>
       :root {
         --bg: #f5f7fb;
@@ -218,7 +227,7 @@
               <input id="upper" name="upper" placeholder="Ejemplo: pi" />
             </div>
           </div>
-          <div>Usar <code>pi</code> para <i>π</i> y <code>oo</code> para ∞.</div>
+          <div>Usar <code>pi</code> para \( \pi \) y <code>oo</code> para \( \infty \).</div>
 
           <div class="actions">
             <button type="submit">Calcular integral</button>
