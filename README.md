@@ -1,6 +1,6 @@
-# Calculadora de Integrales Simbolicas (SymPy + Vercel)
+# Calculadora de integrales simbólicas
 
-Aplicacion web en Python para calcular integrales simbolicas (indefinidas y definidas) con SymPy y mostrar el resultado en LaTeX.
+Aplicacion web en Python para calcular integrales simbólicas (indefinidas y definidas) con SymPy y mostrar el resultado en LaTeX.
 
 ## Estructura
 
