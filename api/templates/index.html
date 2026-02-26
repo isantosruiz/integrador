@@ -29,6 +29,10 @@
         box-sizing: border-box;
       }
 
+      [hidden] {
+        display: none !important;
+      }
+
       body {
         margin: 0;
         font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
@@ -127,6 +131,12 @@
         margin-top: 1rem;
       }
 
+      .actions-inline {
+        display: flex;
+        gap: 0.6rem;
+        align-items: center;
+      }
+
       button {
         border: 0;
         border-radius: 10px;
@@ -140,6 +150,19 @@
 
       button:hover {
         background: #1848b8;
+      }
+
+      button:disabled {
+        opacity: 0.75;
+        cursor: wait;
+      }
+
+      .btn-secondary {
+        background: #2f4f97;
+      }
+
+      .btn-secondary:hover {
+        background: #243f7a;
       }
 
       .result {
@@ -239,7 +262,7 @@
               <input id="upper" name="upper" placeholder="Ejemplo: pi" />
             </div>
           </div>
-          <div>Usar <code class="code-inline">pi</code> para \( \pi \) y <code class="code-inline">oo</code> para \( \infty \).</div>
+          <div class="hint">Usa <code class="code-inline">pi</code> para \( \pi \) y <code class="code-inline">oo</code> para \( \infty \). Escribe funciones en minúsculas: <code class="code-inline">exp()</code>, <code class="code-inline">sqrt()</code>, <code class="code-inline">sin()</code> o <code class="code-inline">sen()</code>, <code class="code-inline">log()</code>, etc. Tanto <code class="code-inline">ln()</code> como <code class="code-inline">log()</code> representan el logaritmo natural; <code class="code-inline">log10()</code> representa el logaritmo en base 10.</div>
 
           <div class="actions">
             <button type="submit">Calcular integral</button>
@@ -253,6 +276,10 @@
           <div class="muted">Resultado:</div>
           <div id="result-latex" class="math-block"></div>
           <div id="result-text" class="hint muted"></div>
+          <div id="approx-actions" class="actions actions-inline" hidden>
+            <button id="approximate-btn" type="button" class="btn-secondary">Aproximar numéricamente</button>
+          </div>
+          <div id="numeric-result" class="hint muted" hidden></div>
           <div id="error" class="error"></div>
         </div>
       </section>
@@ -269,11 +296,27 @@
       const integralLatex = document.getElementById("integral-latex");
       const resultLatex = document.getElementById("result-latex");
       const resultText = document.getElementById("result-text");
+      const approxActions = document.getElementById("approx-actions");
+      const approximateBtn = document.getElementById("approximate-btn");
+      const numericResult = document.getElementById("numeric-result");
       const errorText = document.getElementById("error");
+      let lastDefinedPayload = null;
+
+      function resetApproximationUi() {
+        approxActions.hidden = true;
+        approximateBtn.disabled = false;
+        approximateBtn.textContent = "Aproximar numéricamente";
+        numericResult.hidden = true;
+        numericResult.textContent = "";
+        lastDefinedPayload = null;
+      }
 
       function refreshMode() {
         const mode = document.querySelector('input[name="mode"]:checked').value;
         bounds.hidden = mode !== "defined";
+        if (mode !== "defined") {
+          resetApproximationUi();
+        }
       }
 
       document.querySelectorAll('input[name="mode"]').forEach((radio) => {
@@ -288,6 +331,7 @@
         integralLatex.textContent = "";
         resultLatex.textContent = "";
         resultText.textContent = "Calculando...";
+        resetApproximationUi();
 
         const formData = new FormData(form);
         const payload = {
@@ -314,12 +358,57 @@
           resultLatex.textContent = `\\[${data.result_latex}\\]`;
           resultText.textContent = `Forma texto: ${data.result_text}`;
 
+          if (payload.mode === "defined") {
+            lastDefinedPayload = payload;
+            approxActions.hidden = false;
+          } else {
+            approxActions.hidden = true;
+          }
+
           if (window.MathJax && window.MathJax.typesetPromise) {
             await window.MathJax.typesetPromise([integralLatex, resultLatex]);
           }
         } catch (error) {
           resultText.textContent = "";
           errorText.textContent = String(error.message || error);
+        }
+      });
+
+      approximateBtn.addEventListener("click", async () => {
+        if (!lastDefinedPayload) {
+          return;
+        }
+
+        approximateBtn.disabled = true;
+        approximateBtn.textContent = "Aproximando...";
+        errorText.textContent = "";
+        numericResult.hidden = false;
+        numericResult.textContent = "Calculando aproximación...";
+
+        try {
+          const response = await fetch("/integrate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...lastDefinedPayload, approximate: true }),
+          });
+
+          const data = await response.json();
+          if (!response.ok || !data.ok) {
+            throw new Error(data.error || "Error inesperado");
+          }
+
+          if (!data.numeric_text) {
+            throw new Error("No se pudo calcular la aproximación numérica.");
+          }
+
+          numericResult.textContent = `Aproximación numérica: ${data.numeric_text}`;
+        } catch (error) {
+          numericResult.hidden = true;
+          numericResult.textContent = "";
+          errorText.textContent = String(error.message || error);
+        } finally {
+          approximateBtn.disabled = false;
+          approximateBtn.textContent = "Aproximar numéricamente";
         }
       });
     </script>

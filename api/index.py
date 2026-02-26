@@ -26,6 +26,28 @@ SAFE_LOCALS = {
 }
 
 
+def _log10(value: sp.Expr) -> sp.Expr:
+    return sp.log(value, 10)
+
+
+SAFE_LOCALS.update(
+    {
+        "e": sp.E,
+        "sen": sp.sin,
+        "ln": sp.log,
+        "log10": _log10,
+    }
+)
+
+
+def _to_bool(raw_value) -> bool:
+    if isinstance(raw_value, bool):
+        return raw_value
+    if isinstance(raw_value, str):
+        return raw_value.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(raw_value)
+
+
 def _parse_expression(raw: str, variable: sp.Symbol) -> sp.Expr:
     local_scope = dict(SAFE_LOCALS)
     local_scope[variable.name] = variable
@@ -51,6 +73,7 @@ def integrate():
     mode = str(data.get("mode", "indefinite")).strip().lower()
     lower_raw = str(data.get("lower", "")).strip()
     upper_raw = str(data.get("upper", "")).strip()
+    approximate = _to_bool(data.get("approximate", False))
 
     if not function_raw:
         return jsonify({"ok": False, "error": "Debes ingresar una función."}), 400
@@ -91,14 +114,25 @@ def integrate():
             integral_expr = sp.Integral(function_expr, variable)
             result_expr = sp.integrate(function_expr, variable)
 
-        return jsonify(
-            {
-                "ok": True,
-                "integral_latex": sp.latex(integral_expr),
-                "result_latex": sp.latex(result_expr),
-                "result_text": str(result_expr),
-            }
-        )
+        response = {
+            "ok": True,
+            "integral_latex": sp.latex(integral_expr),
+            "result_latex": sp.latex(result_expr),
+            "result_text": str(result_expr),
+        }
+
+        if mode == "defined" and approximate:
+            numeric_expr = sp.N(result_expr, 25)
+            if numeric_expr.has(sp.Integral):
+                numeric_expr = sp.N(integral_expr, 25)
+
+            if numeric_expr.has(sp.Integral):
+                raise ValueError("No se pudo aproximar numéricamente esta integral.")
+
+            response["numeric_latex"] = sp.latex(numeric_expr)
+            response["numeric_text"] = str(numeric_expr)
+
+        return jsonify(response)
     except Exception as exc:
         return jsonify({"ok": False, "error": f"No se pudo interpretar la expresión: {exc}"}), 400
 
